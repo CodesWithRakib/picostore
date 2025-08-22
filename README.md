@@ -45,6 +45,7 @@ A modern e-commerce platform built with **Next.js 15**, **MongoDB**, and **NextA
 git clone https://github.com/codeswithrakib/picostore.git
 cd picostore
 npm install
+
 ```
 
 ### Environment Variables
@@ -94,6 +95,15 @@ npm run dev
 npm run build
 npm start
 ```
+
+| Route                     | Access    | Description                       |
+| ------------------------- | --------- | --------------------------------- |
+| `/`                       | Public    | Landing page & product browsing   |
+| `/products`               | Public    | List all products                 |
+| `/products/:id`           | Public    | Product details page              |
+| `/login`                  | Public    | Sign in page (Google/Credentials) |
+| `/dashboard`              | Protected | Admin/manager dashboard overview  |
+| `/dashboard/add-products` | Protected | Add new products                  |
 
 ## Contributing
 
