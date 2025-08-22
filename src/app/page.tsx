@@ -22,7 +22,7 @@ export default function Home() {
       description:
         "Discover our latest collection of premium products designed to enhance your lifestyle.",
       imageUrl:
-        "https://images.unsplash.com/photo-1483985988355-7647b8b1c7d1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+        "https://images.unsplash.com/photo-1564406836777-5964b5c6c3a5?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fFN1bW1lciUyMENvbGxlY3Rpb258ZW58MHx8MHx8fDA%3D",
       primaryButtonText: "Shop Now",
       primaryButtonLink: "/products",
       secondaryButtonText: "Learn More",
@@ -55,10 +55,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
-      <div className="container mx-auto px-4 py-8 md:py-12">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 lg:py-16">
         {/* Hero Slider */}
         <section
-          className={`mb-16 md:mb-20 transition-all duration-700 ${
+          className={`mb-16 md:mb-20 lg:mb-24 transition-all duration-700 ${
             isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
           }`}
         >
@@ -73,7 +73,7 @@ export default function Home() {
 
         {/* Featured Products Banner */}
         <section
-          className={`mb-16 md:mb-20 transition-all duration-700 delay-100 ${
+          className={`mb-16 md:mb-20 lg:mb-24 transition-all duration-700 delay-100 ${
             isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
           }`}
         >
@@ -95,11 +95,11 @@ export default function Home() {
 
         {/* Product Highlights */}
         <section
-          className={`mb-16 md:mb-20 transition-all duration-700 delay-200 ${
+          className={`mb-16 md:mb-20 lg:mb-24 transition-all duration-700 delay-200 ${
             isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
           }`}
         >
-          <div className="text-center mb-12">
+          <div className="text-center mb-10 md:mb-12">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
               Featured Products
             </h2>
@@ -115,7 +115,7 @@ export default function Home() {
 
         {/* New Arrivals Banner */}
         <section
-          className={`mb-16 md:mb-20 transition-all duration-700 delay-300 ${
+          className={`mb-16 md:mb-20 lg:mb-24 transition-all duration-700 delay-300 ${
             isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
           }`}
         >
@@ -137,7 +137,7 @@ export default function Home() {
 
         {/* Category Banners */}
         <section
-          className={`grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-16 md:mb-20 transition-all duration-700 delay-400 ${
+          className={`grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-16 md:mb-20 lg:mb-24 transition-all duration-700 delay-400 ${
             isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
           }`}
         >

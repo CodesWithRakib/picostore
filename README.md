@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PicoStore - E-commerce Product Management System
 
-## Getting Started
+A modern e-commerce platform built with **Next.js 15**, **MongoDB**, and **NextAuth.js** for seamless product management and user authentication.
 
-First, run the development server:
+---
+
+## Features
+
+- **User Authentication:** Secure login with NextAuth.js supporting Google OAuth and credentials-based authentication.
+- **Product Management:** Full CRUD operations for products with categories, tags, and stock tracking.
+- **Responsive Design:** Mobile-first design using Tailwind CSS and Radix UI components.
+- **Dashboard:** Professional admin dashboard with collapsible sidebar and analytics.
+- **Product Browsing:** Advanced product filtering, sorting, and search functionality.
+- **Image Management:** Cloudinary integration for product image uploads and optimization.
+- **Dark Mode:** Built-in theme toggle for light and dark mode.
+- **Toast Notifications:** User-friendly notifications using Sonner.
+
+---
+
+## Tech Stack
+
+- **Frontend:** Next.js 15, React 19, TypeScript
+- **Styling:** Tailwind CSS, Radix UI, Lucide React Icons
+- **Database:** MongoDB with Mongoose ODM
+- **Authentication:** NextAuth.js with MongoDB adapter
+- **Form Handling:** React Hook Form with Zod validation
+- **Image Management:** Cloudinary
+- **State Management:** React hooks and context
+- **HTTP Client:** Axios
+
+---
+
+## Installation and Setup
+
+### Prerequisites
+
+- Node.js 18+
+- MongoDB account
+- Google OAuth credentials (for Google login)
+- Cloudinary account (for image uploads)
+
+### Clone the Repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/codeswithrakib/picostore.git
+cd picostore
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env.local` file in the root folder and add the following:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```env
+# MongoDB
+MONGODB_URI=your_mongodb_connection_string
 
-## Learn More
+# NextAuth
+NEXTAUTH_SECRET=your_nextauth_secret
+NEXTAUTH_URL=http://localhost:3000
 
-To learn more about Next.js, take a look at the following resources:
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Cloudinary
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Usage
 
-## Deploy on Vercel
+### Public Features
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Browse products with advanced filtering and sorting
+- View detailed product information
+- Search for products by name, description, or tags
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Authenticated Features
+
+- Add new products to the catalog
+- Manage product inventory
+- Access the admin dashboard
+- View analytics and reports
+
+## Running the Project
+
+```bash
+# Run development server
+npm run dev
+
+
+# Build for production
+npm run build
+npm start
+```
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request for improvements or bug fixes.
+
+---
+
+## License
+
+This project is licensed under the MIT License.
