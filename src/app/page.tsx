@@ -1,103 +1,178 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useState } from "react";
+import HeroSlider from "@/components/layout/hero-banner";
+import ProductBanner from "@/components/layout/product-banner";
+import ProductList from "@/components/product/product-list";
+import Banner from "@/components/layout/banner";
+import StatsSection from "@/components/layout/stats-section";
+import NewsletterSection from "@/components/layout/newsletter-section";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [isMounted, setIsMounted] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const heroSlides = [
+    {
+      id: "1",
+      title: "Summer Collection 2023",
+      subtitle: "New Arrivals",
+      description:
+        "Discover our latest collection of premium products designed to enhance your lifestyle.",
+      imageUrl:
+        "https://images.unsplash.com/photo-1483985988355-7647b8b1c7d1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      primaryButtonText: "Shop Now",
+      primaryButtonLink: "/products",
+      secondaryButtonText: "Learn More",
+      secondaryButtonLink: "/about",
+      showRating: true,
+    },
+    {
+      id: "2",
+      title: "Electronics Sale",
+      subtitle: "Up to 50% Off",
+      description:
+        "Get the latest gadgets and electronics at unbeatable prices for a limited time.",
+      imageUrl:
+        "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2074&q=80",
+      primaryButtonText: "Shop Sale",
+      primaryButtonLink: "/products?category=electronics",
+    },
+    {
+      id: "3",
+      title: "Home & Living",
+      subtitle: "Transform Your Space",
+      description:
+        "Create the perfect living environment with our curated selection of home essentials.",
+      imageUrl:
+        "https://images.unsplash.com/photo-1524758631624-e2822e304c36?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+      primaryButtonText: "Explore",
+      primaryButtonLink: "/products?category=home",
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+      <div className="container mx-auto px-4 py-8 md:py-12">
+        {/* Hero Slider */}
+        <section
+          className={`mb-16 md:mb-20 transition-all duration-700 ${
+            isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          }`}
+        >
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl dark:shadow-black/30">
+            <HeroSlider
+              slides={heroSlides}
+              autoSlide={true}
+              autoSlideInterval={5000}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          </div>
+        </section>
+
+        {/* Featured Products Banner */}
+        <section
+          className={`mb-16 md:mb-20 transition-all duration-700 delay-100 ${
+            isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          }`}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+            <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-1">
+              <ProductBanner
+                title="Flash Sale"
+                subtitle="Limited Time Offer"
+                description="Get up to 50% off on selected items. Don't miss out on these amazing deals!"
+                buttonText="Shop Sale"
+                buttonLink="/products?category=sale"
+                badgeText="Flash Sale"
+                countdown="2d 14h 32m"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Product Highlights */}
+        <section
+          className={`mb-16 md:mb-20 transition-all duration-700 delay-200 ${
+            isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          }`}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
+              Featured Products
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-6">
+              Discover our handpicked selection of premium products
+            </p>
+            <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-indigo-500 mx-auto rounded-full"></div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-black/20 p-6 md:p-8">
+            <ProductList />
+          </div>
+        </section>
+
+        {/* New Arrivals Banner */}
+        <section
+          className={`mb-16 md:mb-20 transition-all duration-700 delay-300 ${
+            isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          }`}
         >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+            <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-1">
+              <Banner
+                title="New Arrivals"
+                subtitle="Just In Store"
+                description="Be the first to get your hands on our latest collection of innovative products."
+                variant="primary"
+                alignment="right"
+                buttonText="Explore New"
+                buttonLink="/products?sort=newest"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Category Banners */}
+        <section
+          className={`grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-16 md:mb-20 transition-all duration-700 delay-400 ${
+            isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
+          }`}
+        >
+          <div className="relative group h-full">
+            <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+            <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-1 h-full">
+              <Banner
+                title="Electronics"
+                description="Cutting-edge technology for modern living"
+                variant="secondary"
+                buttonText="Shop Electronics"
+                buttonLink="/products?category=electronics"
+              />
+            </div>
+          </div>
+          <div className="relative group h-full">
+            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
+            <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-1 h-full">
+              <Banner
+                title="Home & Garden"
+                description="Transform your living space with our curated selection"
+                variant="secondary"
+                buttonText="Shop Home"
+                buttonLink="/products?category=home"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Stats Section */}
+        <StatsSection isMounted={isMounted} />
+
+        {/* Newsletter Section */}
+        <NewsletterSection isMounted={isMounted} />
+      </div>
     </div>
   );
 }
