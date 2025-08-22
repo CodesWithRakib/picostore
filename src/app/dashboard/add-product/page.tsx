@@ -45,20 +45,22 @@ const productSchema = z.object({
   tags: z.array(z.string()).optional(),
   sku: z.string().optional(),
   brand: z.string().optional(),
-  weight: z.number().min(0, "Weight must be positive").optional(),
+  weight: z.number().min(0, "Weight must be positive").optional().nullable(),
   dimensions: z
     .object({
       length: z.number().min(0, "Length must be positive"),
       width: z.number().min(0, "Width must be positive"),
       height: z.number().min(0, "Height must be positive"),
     })
-    .optional(),
+    .optional()
+    .nullable(),
   discount: z
     .object({
       percentage: z.number().min(1).max(90),
-      validUntil: z.date(),
+      validUntil: z.string().transform((str) => new Date(str)),
     })
-    .optional(),
+    .optional()
+    .nullable(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -96,11 +98,16 @@ export default function AddProductPage() {
     formState: { errors },
     setValue,
     reset,
+    watch,
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
       featured: false,
       images: [],
+      tags: [],
+      weight: undefined,
+      dimensions: undefined,
+      discount: undefined,
     },
   });
 
@@ -233,12 +240,19 @@ export default function AddProductPage() {
       // Format data for API - use state values for images and thumbnail
       const formattedData = {
         ...data,
-        thumbnailImage: thumbnailUrl, // Use state value
-        images: imageUrls, // Use state value
+        thumbnailImage: thumbnailUrl,
+        images: imageUrls,
         tags: data.tags || [],
-        // Ensure we don't send imageUrl field
-        imageUrl: undefined,
+        // Remove undefined values
+        weight: data.weight || undefined,
+        dimensions: data.dimensions || undefined,
+        discount: data.discount || undefined,
       };
+
+      // Remove imageUrl field if it exists
+      if ("imageUrl" in formattedData) {
+        delete (formattedData as any).imageUrl;
+      }
 
       // Log the data being sent for debugging
       console.log("Submitting product data:", formattedData);
@@ -538,7 +552,7 @@ export default function AddProductPage() {
                     <Checkbox
                       id="featured"
                       checked={field.value}
-                      onCheckedChange={field.onChange}
+                      onCheckedChange={(checked) => field.onChange(checked)}
                     />
                   )}
                 />
@@ -640,23 +654,10 @@ export default function AddProductPage() {
                   </div>
                   <div>
                     <Label htmlFor="validUntil">Valid Until</Label>
-                    <Controller
-                      name="discount.validUntil"
-                      control={control}
-                      render={({ field }) => (
-                        <Input
-                          id="validUntil"
-                          type="date"
-                          value={
-                            field.value
-                              ? field.value.toISOString().split("T")[0]
-                              : ""
-                          }
-                          onChange={(e) =>
-                            field.onChange(new Date(e.target.value))
-                          }
-                        />
-                      )}
+                    <Input
+                      id="validUntil"
+                      type="date"
+                      {...register("discount.validUntil")}
                     />
                     {errors.discount?.validUntil && (
                       <p className="text-red-500 text-sm mt-1">

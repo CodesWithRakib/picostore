@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { format } from "date-fns";
 
 export default function ProductDetails({ product }: { product: IProduct }) {
   const [quantity, setQuantity] = useState(1);
@@ -32,13 +33,9 @@ export default function ProductDetails({ product }: { product: IProduct }) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   // Format dates for display
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
+  function formatDate(date: Date | string) {
+    return format(new Date(date), "PP p");
+  }
 
   // Use actual product images from the schema
   const productImages = product.images || [];
