@@ -277,51 +277,47 @@ export default function AddProductPage() {
       return;
     }
 
-    // Validate required fields
-    if (!data.name || data.name.trim() === "") {
-      toast.error("Product name is required");
-      return;
-    }
-    if (!data.description || data.description.trim() === "") {
-      toast.error("Product description is required");
-      return;
-    }
-    if (data.price < 0) {
-      toast.error("Price must be a positive number");
-      return;
-    }
-    if (!data.category) {
-      toast.error("Product category is required");
-      return;
-    }
-    if (data.stock < 0) {
-      toast.error("Stock must be a positive number");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
+      // Format data to ensure numbers are properly typed
       const formattedData: ProductFormData = {
         ...data,
         thumbnailImage: thumbnailUrl,
         images: imageUrls,
         tags: data.tags || [],
-        weight: data.weight || undefined,
-        dimensions: data.dimensions || undefined,
-        discount: data.discount || undefined,
+        weight: data.weight !== undefined ? Number(data.weight) : undefined,
+        dimensions: data.dimensions
+          ? {
+              length: Number(data.dimensions.length),
+              width: Number(data.dimensions.width),
+              height: Number(data.dimensions.height),
+            }
+          : undefined,
+        discount: data.discount
+          ? {
+              percentage: Number(data.discount.percentage),
+              validUntil: new Date(data.discount.validUntil),
+            }
+          : undefined,
         variants: data.variants || [],
-        rating: data.rating,
+        rating: {
+          average: Number(data.rating.average),
+          count: Number(data.rating.count),
+        },
         reviews: data.reviews,
       };
+
       const response = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedData),
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to create product");
       }
+
       toast.success("Product created successfully!");
       reset();
       setImageUrls([]);
@@ -411,6 +407,7 @@ export default function AddProductPage() {
                       value: 10000,
                       message: "Price cannot exceed $10000",
                     },
+                    valueAsNumber: true,
                   })}
                   placeholder="0.00"
                 />
@@ -428,6 +425,7 @@ export default function AddProductPage() {
                   {...register("stock", {
                     required: "Stock quantity is required",
                     min: { value: 0, message: "Stock must be positive" },
+                    valueAsNumber: true,
                   })}
                   placeholder="0"
                 />
@@ -457,6 +455,7 @@ export default function AddProductPage() {
                   step="0.01"
                   {...register("weight", {
                     min: { value: 0, message: "Weight must be positive" },
+                    valueAsNumber: true,
                   })}
                   placeholder="0.00"
                 />
@@ -711,6 +710,7 @@ export default function AddProductPage() {
                       {...register("dimensions.length", {
                         required: "Length is required",
                         min: { value: 0, message: "Length must be positive" },
+                        valueAsNumber: true,
                       })}
                     />
                     {errors.dimensions?.length && (
@@ -727,6 +727,7 @@ export default function AddProductPage() {
                       {...register("dimensions.width", {
                         required: "Width is required",
                         min: { value: 0, message: "Width must be positive" },
+                        valueAsNumber: true,
                       })}
                     />
                     {errors.dimensions?.width && (
@@ -743,6 +744,7 @@ export default function AddProductPage() {
                       {...register("dimensions.height", {
                         required: "Height is required",
                         min: { value: 0, message: "Height must be positive" },
+                        valueAsNumber: true,
                       })}
                     />
                     {errors.dimensions?.height && (
@@ -783,6 +785,7 @@ export default function AddProductPage() {
                           value: 90,
                           message: "Discount cannot exceed 90%",
                         },
+                        valueAsNumber: true,
                       })}
                     />
                     {errors.discount?.percentage && (
@@ -798,6 +801,7 @@ export default function AddProductPage() {
                       type="date"
                       {...register("discount.validUntil", {
                         required: "Valid until date is required",
+                        valueAsDate: true,
                       })}
                     />
                     {errors.discount?.validUntil && (

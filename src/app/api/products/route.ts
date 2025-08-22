@@ -111,6 +111,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log("Received request body:", body); // Debug log
 
+    // Convert string numbers to actual numbers
+    if (typeof body.price === "string") {
+      body.price = parseFloat(body.price);
+    }
+    if (typeof body.stock === "string") {
+      body.stock = parseInt(body.stock, 10);
+    }
+    if (typeof body.weight === "string") {
+      body.weight = parseFloat(body.weight);
+    }
+
     // Validate required fields
     const {
       name,
@@ -130,35 +141,43 @@ export async function POST(request: NextRequest) {
       images?: string[];
     };
 
+    // Check for required fields and valid numbers
     if (
       !name ||
       !description ||
-      !price ||
+      price === undefined ||
+      isNaN(price) ||
       !category ||
       stock === undefined ||
+      isNaN(stock) ||
       !thumbnailImage ||
       !images ||
       images.length === 0
     ) {
-      console.log("Missing required fields:", {
+      console.log("Missing or invalid required fields:", {
         name: !name,
         description: !description,
-        price: !price,
+        price: price === undefined || isNaN(price),
         category: !category,
-        stock: stock === undefined,
+        stock: stock === undefined || isNaN(stock),
         thumbnailImage: !thumbnailImage,
         images: !images || images.length === 0,
       });
       return NextResponse.json(
         {
-          error: "Missing required fields",
+          error: "Missing or invalid required fields",
           details: {
             name: !name ? "Product name is required" : undefined,
             description: !description ? "Description is required" : undefined,
-            price: !price ? "Price is required" : undefined,
+            price:
+              price === undefined || isNaN(price)
+                ? "Price must be a valid number"
+                : undefined,
             category: !category ? "Category is required" : undefined,
             stock:
-              stock === undefined ? "Stock quantity is required" : undefined,
+              stock === undefined || isNaN(stock)
+                ? "Stock must be a valid number"
+                : undefined,
             thumbnailImage: !thumbnailImage
               ? "Thumbnail image is required"
               : undefined,
@@ -185,7 +204,7 @@ export async function POST(request: NextRequest) {
       tags: body.tags || [],
       sku: body.sku || "",
       brand: body.brand || "",
-      weight: body.weight || undefined,
+      weight: body.weight, // Now properly converted to number or undefined
       dimensions: body.dimensions || undefined,
       discount: body.discount || undefined,
       // Initialize rating fields
@@ -200,11 +219,9 @@ export async function POST(request: NextRequest) {
     console.log("Saving product:", product); // Debug log
     await product.save();
     console.log("Product saved successfully:", product); // Debug log
-
     return NextResponse.json(product, { status: 201 });
   } catch (error: unknown) {
     console.error("Error creating product:", error);
-
     // Handle validation errors
     if (error instanceof mongoose.Error.ValidationError) {
       const messages = Object.values(error.errors).map(
@@ -217,25 +234,21 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
     // Handle duplicate key errors (e.g., for SKU)
     if (error instanceof Error && "code" in error) {
       const mongoError = error as MongoDuplicateError;
-
       // Check for MongoDB duplicate key error (code 11000 or 11001)
       if (mongoError.code === 11000 || mongoError.code === 11001) {
         const field = mongoError.keyPattern
           ? Object.keys(mongoError.keyPattern)[0]
           : "unknown";
         console.log("Duplicate key error:", field, mongoError.keyPattern); // Debug log
-
         return NextResponse.json(
           { error: `Duplicate field value: ${field} already exists` },
           { status: 400 }
         );
       }
     }
-
     // Handle other Mongoose errors
     if (error instanceof MongooseError) {
       console.log("Mongoose error:", error.message); // Debug log
@@ -244,7 +257,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
     // Handle generic errors
     return NextResponse.json(
       { error: "Failed to create product" },
