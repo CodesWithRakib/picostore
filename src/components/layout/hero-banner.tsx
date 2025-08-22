@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
@@ -36,18 +36,18 @@ export default function HeroSlider({
     );
   };
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setCurrentSlide((currentSlide) =>
       currentSlide === slides.length - 1 ? 0 : currentSlide + 1
     );
-  };
+  }, [slides.length]);
 
   useEffect(() => {
     if (!autoSlide) return;
 
     const slideInterval = setInterval(nextSlide, autoSlideInterval);
     return () => clearInterval(slideInterval);
-  }, [autoSlide, autoSlideInterval]);
+  }, [autoSlide, autoSlideInterval, nextSlide]);
 
   return (
     <div className="relative w-full h-[500px] md:h-[600px] lg:h-[700px] overflow-hidden rounded-2xl">

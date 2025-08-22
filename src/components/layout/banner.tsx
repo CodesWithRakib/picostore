@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Star, ShoppingCart, Tag } from "lucide-react";
+import { ArrowRight, Tag } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 

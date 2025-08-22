@@ -1,10 +1,7 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,47 +20,46 @@ import { Badge } from "@/components/ui/badge";
 import { X, Upload, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 
-// Zod schema matching our product model
-const productSchema = z.object({
-  name: z.string().min(1, "Product name is required").max(100),
-  description: z.string().min(1, "Description is required").max(1000),
-  price: z.number().min(0, "Price must be positive").max(10000),
-  category: z.enum([
-    "electronics",
-    "clothing",
-    "home",
-    "beauty",
-    "sports",
-    "books",
-  ]),
-  stock: z.number().min(0, "Stock cannot be negative"),
-  featured: z.boolean().default(false),
-  thumbnailImage: z.string().url("Invalid URL").min(1, "Thumbnail is required"),
-  images: z
-    .array(z.string().url("Invalid URL"))
-    .min(1, "At least one image is required"),
-  tags: z.array(z.string()).optional(),
-  sku: z.string().optional(),
-  brand: z.string().optional(),
-  weight: z.number().min(0, "Weight must be positive").optional().nullable(),
-  dimensions: z
-    .object({
-      length: z.number().min(0, "Length must be positive"),
-      width: z.number().min(0, "Width must be positive"),
-      height: z.number().min(0, "Height must be positive"),
-    })
-    .optional()
-    .nullable(),
-  discount: z
-    .object({
-      percentage: z.number().min(1).max(90),
-      validUntil: z.string().transform((str) => new Date(str)),
-    })
-    .optional()
-    .nullable(),
-});
+// Review interface for form state
+interface ReviewForm {
+  id: string;
+  name: string;
+  rating: number;
+  date: Date;
+  comment: string;
+  verified?: boolean;
+}
 
-type ProductFormData = z.infer<typeof productSchema>;
+// Form data type
+type ProductFormData = {
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  stock: number;
+  featured: boolean;
+  thumbnailImage: string;
+  images: string[];
+  tags?: string[];
+  sku?: string;
+  brand?: string;
+  weight?: number;
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  discount?: {
+    percentage: number;
+    validUntil: Date;
+  };
+  variants?: string[];
+  rating: {
+    average: number;
+    count: number;
+  };
+  reviews: ReviewForm[];
+};
 
 const categories = [
   { value: "electronics", label: "Electronics" },
@@ -90,6 +86,19 @@ export default function AddProductPage() {
   const [hasDiscount, setHasDiscount] = useState(false);
   const [hasDimensions, setHasDimensions] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variantIds, setVariantIds] = useState<string[]>([]);
+  const [currentVariantId, setCurrentVariantId] = useState("");
+  const [hasReviews, setHasReviews] = useState(false);
+  const [reviews, setReviews] = useState<ReviewForm[]>([]);
+  const [currentReview, setCurrentReview] = useState<
+    Omit<ReviewForm, "id" | "date">
+  >({
+    name: "",
+    rating: 5,
+    comment: "",
+    verified: false,
+  });
 
   const {
     register,
@@ -98,9 +107,7 @@ export default function AddProductPage() {
     formState: { errors },
     setValue,
     reset,
-    watch,
   } = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
     defaultValues: {
       featured: false,
       images: [],
@@ -108,6 +115,9 @@ export default function AddProductPage() {
       weight: undefined,
       dimensions: undefined,
       discount: undefined,
+      variants: [],
+      rating: { average: 0, count: 0 },
+      reviews: [],
     },
   });
 
@@ -126,16 +136,60 @@ export default function AddProductPage() {
     setValue("tags", newTags);
   };
 
+  const addVariant = () => {
+    if (currentVariantId && !variantIds.includes(currentVariantId)) {
+      const newVariants = [...variantIds, currentVariantId];
+      setVariantIds(newVariants);
+      setValue("variants", newVariants);
+      setCurrentVariantId("");
+    }
+  };
+
+  const removeVariant = (variantToRemove: string) => {
+    const newVariants = variantIds.filter(
+      (variant) => variant !== variantToRemove
+    );
+    setVariantIds(newVariants);
+    setValue("variants", newVariants);
+  };
+
+  const addReview = () => {
+    if (currentReview.name && currentReview.comment) {
+      const newReview: ReviewForm = {
+        id: Math.random().toString(36).substring(2, 9),
+        name: currentReview.name,
+        rating: currentReview.rating,
+        date: new Date(),
+        comment: currentReview.comment,
+        verified: currentReview.verified,
+      };
+      const newReviews = [...reviews, newReview];
+      setReviews(newReviews);
+      setValue("reviews", newReviews);
+      setCurrentReview({
+        name: "",
+        rating: 5,
+        comment: "",
+        verified: false,
+      });
+    }
+  };
+
+  const removeReview = (index: number) => {
+    const newReviews = [...reviews];
+    newReviews.splice(index, 1);
+    setReviews(newReviews);
+    setValue("reviews", newReviews);
+  };
+
   const uploadImageToCloudinary = async (file: File) => {
     if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
       toast.error("Cloudinary configuration is missing");
       return null;
     }
-
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-
     try {
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
@@ -144,11 +198,9 @@ export default function AddProductPage() {
           body: formData,
         }
       );
-
       if (!response.ok) {
         throw new Error("Failed to upload image");
       }
-
       const data = await response.json();
       return data.secure_url;
     } catch (error) {
@@ -160,15 +212,12 @@ export default function AddProductPage() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-
     setIsUploading(true);
     const files = Array.from(e.target.files);
-
     try {
       const uploadPromises = files.map((file) => uploadImageToCloudinary(file));
       const urls = await Promise.all(uploadPromises);
       const validUrls = urls.filter((url) => url !== null) as string[];
-
       if (validUrls.length > 0) {
         const newImageUrls = [...imageUrls, ...validUrls];
         setImageUrls(newImageUrls);
@@ -180,7 +229,6 @@ export default function AddProductPage() {
       console.error(error);
     } finally {
       setIsUploading(false);
-      // Reset the input value to allow uploading the same file again
       e.target.value = "";
     }
   };
@@ -189,10 +237,8 @@ export default function AddProductPage() {
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     if (!e.target.files || e.target.files.length === 0) return;
-
     setIsUploading(true);
     const file = e.target.files[0];
-
     try {
       const url = await uploadImageToCloudinary(file);
       if (url) {
@@ -205,7 +251,6 @@ export default function AddProductPage() {
       console.error(error);
     } finally {
       setIsUploading(false);
-      // Reset the input value to allow uploading the same file again
       e.target.value = "";
     }
   };
@@ -223,61 +268,71 @@ export default function AddProductPage() {
   };
 
   const onSubmit = async (data: ProductFormData) => {
-    // Check if images and thumbnail are provided using state
     if (!imageUrls || imageUrls.length === 0) {
       toast.error("At least one product image is required");
       return;
     }
-
     if (!thumbnailUrl) {
       toast.error("Thumbnail image is required");
       return;
     }
 
-    setIsSubmitting(true);
+    // Validate required fields
+    if (!data.name || data.name.trim() === "") {
+      toast.error("Product name is required");
+      return;
+    }
+    if (!data.description || data.description.trim() === "") {
+      toast.error("Product description is required");
+      return;
+    }
+    if (data.price < 0) {
+      toast.error("Price must be a positive number");
+      return;
+    }
+    if (!data.category) {
+      toast.error("Product category is required");
+      return;
+    }
+    if (data.stock < 0) {
+      toast.error("Stock must be a positive number");
+      return;
+    }
 
+    setIsSubmitting(true);
     try {
-      // Format data for API - use state values for images and thumbnail
-      const formattedData = {
+      const formattedData: ProductFormData = {
         ...data,
         thumbnailImage: thumbnailUrl,
         images: imageUrls,
         tags: data.tags || [],
-        // Remove undefined values
         weight: data.weight || undefined,
         dimensions: data.dimensions || undefined,
         discount: data.discount || undefined,
+        variants: data.variants || [],
+        rating: data.rating,
+        reviews: data.reviews,
       };
-
-      // Remove imageUrl field if it exists
-      if ("imageUrl" in formattedData) {
-        delete (formattedData as any).imageUrl;
-      }
-
-      // Log the data being sent for debugging
-      console.log("Submitting product data:", formattedData);
-
-      // API call
       const response = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedData),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to create product");
       }
-
       toast.success("Product created successfully!");
       reset();
       setImageUrls([]);
       setThumbnailUrl("");
       setTags([]);
+      setVariantIds([]);
+      setReviews([]);
       router.push("/products");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error.message || "Failed to create product. Please try again."
+        error instanceof Error ? error.message : "Failed to create product"
       );
       console.error(error);
     } finally {
@@ -296,10 +351,12 @@ export default function AddProductPage() {
             {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="name">Product Name</Label>
+                <Label htmlFor="name">Product Name *</Label>
                 <Input
                   id="name"
-                  {...register("name")}
+                  {...register("name", {
+                    required: "Product name is required",
+                  })}
                   placeholder="Enter product name"
                 />
                 {errors.name && (
@@ -309,10 +366,11 @@ export default function AddProductPage() {
                 )}
               </div>
               <div>
-                <Label htmlFor="category">Category</Label>
+                <Label htmlFor="category">Category *</Label>
                 <Controller
                   name="category"
                   control={control}
+                  rules={{ required: "Category is required" }}
                   render={({ field }) => (
                     <Select
                       onValueChange={field.onChange}
@@ -341,12 +399,19 @@ export default function AddProductPage() {
                 )}
               </div>
               <div>
-                <Label htmlFor="price">Price ($)</Label>
+                <Label htmlFor="price">Price ($) *</Label>
                 <Input
                   id="price"
                   type="number"
                   step="0.01"
-                  {...register("price", { valueAsNumber: true })}
+                  {...register("price", {
+                    required: "Price is required",
+                    min: { value: 0, message: "Price must be positive" },
+                    max: {
+                      value: 10000,
+                      message: "Price cannot exceed $10000",
+                    },
+                  })}
                   placeholder="0.00"
                 />
                 {errors.price && (
@@ -356,11 +421,14 @@ export default function AddProductPage() {
                 )}
               </div>
               <div>
-                <Label htmlFor="stock">Stock Quantity</Label>
+                <Label htmlFor="stock">Stock Quantity *</Label>
                 <Input
                   id="stock"
                   type="number"
-                  {...register("stock", { valueAsNumber: true })}
+                  {...register("stock", {
+                    required: "Stock quantity is required",
+                    min: { value: 0, message: "Stock must be positive" },
+                  })}
                   placeholder="0"
                 />
                 {errors.stock && (
@@ -381,14 +449,33 @@ export default function AddProductPage() {
                 <Label htmlFor="sku">SKU</Label>
                 <Input id="sku" {...register("sku")} placeholder="Enter SKU" />
               </div>
+              <div>
+                <Label htmlFor="weight">Weight (kg)</Label>
+                <Input
+                  id="weight"
+                  type="number"
+                  step="0.01"
+                  {...register("weight", {
+                    min: { value: 0, message: "Weight must be positive" },
+                  })}
+                  placeholder="0.00"
+                />
+                {errors.weight && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.weight.message}
+                  </p>
+                )}
+              </div>
             </div>
-
             {/* Description */}
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description *</Label>
               <Textarea
                 id="description"
-                {...register("description")}
+                {...register("description", {
+                  required: "Description is required",
+                  maxLength: { value: 1000, message: "Description too long" },
+                })}
                 placeholder="Enter product description"
                 rows={4}
               />
@@ -398,13 +485,11 @@ export default function AddProductPage() {
                 </p>
               )}
             </div>
-
             {/* Images */}
             <div>
               <div className="flex justify-between items-center mb-2">
                 <Label>Product Images</Label>
               </div>
-
               {/* Thumbnail Upload */}
               <div className="mb-6">
                 <Label className="block mb-2">Thumbnail Image *</Label>
@@ -456,7 +541,6 @@ export default function AddProductPage() {
                   </p>
                 )}
               </div>
-
               {/* Multiple Images Upload */}
               <div>
                 <Label className="block mb-2">Product Images *</Label>
@@ -478,7 +562,6 @@ export default function AddProductPage() {
                     disabled={isUploading}
                   />
                 </div>
-
                 {imageUrls.length > 0 && (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {imageUrls.map((url, index) => (
@@ -512,7 +595,6 @@ export default function AddProductPage() {
                 )}
               </div>
             </div>
-
             {/* Tags */}
             <div>
               <Label>Tags</Label>
@@ -541,7 +623,55 @@ export default function AddProductPage() {
                 ))}
               </div>
             </div>
-
+            {/* Variants */}
+            <div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="hasVariants"
+                  checked={hasVariants}
+                  onCheckedChange={(checked) => {
+                    setHasVariants(!!checked);
+                    if (!checked) {
+                      setValue("variants", []);
+                      setVariantIds([]);
+                    }
+                  }}
+                />
+                <Label htmlFor="hasVariants">Add Product Variants</Label>
+              </div>
+              {hasVariants && (
+                <div className="pl-6 mt-2">
+                  <div className="flex gap-2 mb-2">
+                    <Input
+                      value={currentVariantId}
+                      onChange={(e) => setCurrentVariantId(e.target.value)}
+                      placeholder="Enter variant ID"
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && (e.preventDefault(), addVariant())
+                      }
+                    />
+                    <Button type="button" onClick={addVariant}>
+                      Add
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {variantIds.map((variant, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="flex gap-1"
+                      >
+                        {variant}
+                        <X
+                          className="h-3 w-3 cursor-pointer"
+                          onClick={() => removeVariant(variant)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             {/* Additional Options */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
@@ -552,13 +682,12 @@ export default function AddProductPage() {
                     <Checkbox
                       id="featured"
                       checked={field.value}
-                      onCheckedChange={(checked) => field.onChange(checked)}
+                      onCheckedChange={(checked) => field.onChange(!!checked)}
                     />
                   )}
                 />
                 <Label htmlFor="featured">Featured Product</Label>
               </div>
-
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="hasDimensions"
@@ -572,7 +701,6 @@ export default function AddProductPage() {
                 />
                 <Label htmlFor="hasDimensions">Add Dimensions</Label>
               </div>
-
               {hasDimensions && (
                 <div className="grid grid-cols-3 gap-4 pl-6">
                   <div>
@@ -581,7 +709,8 @@ export default function AddProductPage() {
                       id="length"
                       type="number"
                       {...register("dimensions.length", {
-                        valueAsNumber: true,
+                        required: "Length is required",
+                        min: { value: 0, message: "Length must be positive" },
                       })}
                     />
                     {errors.dimensions?.length && (
@@ -595,7 +724,10 @@ export default function AddProductPage() {
                     <Input
                       id="width"
                       type="number"
-                      {...register("dimensions.width", { valueAsNumber: true })}
+                      {...register("dimensions.width", {
+                        required: "Width is required",
+                        min: { value: 0, message: "Width must be positive" },
+                      })}
                     />
                     {errors.dimensions?.width && (
                       <p className="text-red-500 text-sm mt-1">
@@ -609,7 +741,8 @@ export default function AddProductPage() {
                       id="height"
                       type="number"
                       {...register("dimensions.height", {
-                        valueAsNumber: true,
+                        required: "Height is required",
+                        min: { value: 0, message: "Height must be positive" },
                       })}
                     />
                     {errors.dimensions?.height && (
@@ -620,7 +753,6 @@ export default function AddProductPage() {
                   </div>
                 </div>
               )}
-
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="hasDiscount"
@@ -634,7 +766,6 @@ export default function AddProductPage() {
                 />
                 <Label htmlFor="hasDiscount">Add Discount</Label>
               </div>
-
               {hasDiscount && (
                 <div className="grid grid-cols-2 gap-4 pl-6">
                   <div>
@@ -643,7 +774,15 @@ export default function AddProductPage() {
                       id="discountPercentage"
                       type="number"
                       {...register("discount.percentage", {
-                        valueAsNumber: true,
+                        required: "Discount percentage is required",
+                        min: {
+                          value: 1,
+                          message: "Discount must be at least 1%",
+                        },
+                        max: {
+                          value: 90,
+                          message: "Discount cannot exceed 90%",
+                        },
                       })}
                     />
                     {errors.discount?.percentage && (
@@ -657,7 +796,9 @@ export default function AddProductPage() {
                     <Input
                       id="validUntil"
                       type="date"
-                      {...register("discount.validUntil")}
+                      {...register("discount.validUntil", {
+                        required: "Valid until date is required",
+                      })}
                     />
                     {errors.discount?.validUntil && (
                       <p className="text-red-500 text-sm mt-1">
@@ -667,8 +808,199 @@ export default function AddProductPage() {
                   </div>
                 </div>
               )}
+              {/* Rating */}
+              <div>
+                <div className="flex items-center space-x-2">
+                  <Controller
+                    name="rating.average"
+                    control={control}
+                    rules={{
+                      required: "Average rating is required",
+                      min: { value: 0, message: "Rating must be at least 0" },
+                      max: { value: 5, message: "Rating cannot exceed 5" },
+                    }}
+                    render={({ field }) => (
+                      <>
+                        <Label htmlFor="ratingAverage">Average Rating</Label>
+                        <Input
+                          id="ratingAverage"
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="5"
+                          {...field}
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(parseFloat(e.target.value))
+                          }
+                        />
+                      </>
+                    )}
+                  />
+                  <Controller
+                    name="rating.count"
+                    control={control}
+                    rules={{
+                      required: "Review count is required",
+                      min: { value: 0, message: "Count must be at least 0" },
+                    }}
+                    render={({ field }) => (
+                      <>
+                        <Label htmlFor="ratingCount">Review Count</Label>
+                        <Input
+                          id="ratingCount"
+                          type="number"
+                          min="0"
+                          {...field}
+                          value={field.value}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value))
+                          }
+                        />
+                      </>
+                    )}
+                  />
+                </div>
+                {(errors.rating?.average || errors.rating?.count) && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.rating?.average?.message ||
+                      errors.rating?.count?.message}
+                  </p>
+                )}
+              </div>
+              {/* Reviews */}
+              <div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="hasReviews"
+                    checked={hasReviews}
+                    onCheckedChange={(checked) => {
+                      setHasReviews(!!checked);
+                      if (!checked) {
+                        setValue("reviews", []);
+                        setReviews([]);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="hasReviews">Add Reviews</Label>
+                </div>
+                {hasReviews && (
+                  <div className="pl-6 mt-2 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="reviewerName">Reviewer Name</Label>
+                        <Input
+                          id="reviewerName"
+                          value={currentReview.name}
+                          onChange={(e) =>
+                            setCurrentReview({
+                              ...currentReview,
+                              name: e.target.value,
+                            })
+                          }
+                          placeholder="Enter reviewer name"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="reviewRating">Rating</Label>
+                        <Select
+                          value={currentReview.rating.toString()}
+                          onValueChange={(value) =>
+                            setCurrentReview({
+                              ...currentReview,
+                              rating: parseInt(value),
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[1, 2, 3, 4, 5].map((rating) => (
+                              <SelectItem
+                                key={rating}
+                                value={rating.toString()}
+                              >
+                                {rating} Star{rating !== 1 ? "s" : ""}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="reviewComment">Comment</Label>
+                      <Textarea
+                        id="reviewComment"
+                        value={currentReview.comment}
+                        onChange={(e) =>
+                          setCurrentReview({
+                            ...currentReview,
+                            comment: e.target.value,
+                          })
+                        }
+                        placeholder="Enter review comment"
+                        rows={3}
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="reviewVerified"
+                        checked={currentReview.verified}
+                        onCheckedChange={(checked) =>
+                          setCurrentReview({
+                            ...currentReview,
+                            verified: !!checked,
+                          })
+                        }
+                      />
+                      <Label htmlFor="reviewVerified">Verified Purchase</Label>
+                      <Button type="button" onClick={addReview}>
+                        Add Review
+                      </Button>
+                    </div>
+                    {reviews.length > 0 && (
+                      <div className="space-y-2 mt-4">
+                        <Label>Added Reviews</Label>
+                        {reviews.map((review, index) => (
+                          <div
+                            key={index}
+                            className="border rounded p-3 flex justify-between items-start"
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">
+                                  {review.name}
+                                </span>
+                                <span className="text-yellow-500">
+                                  {"★".repeat(review.rating)}
+                                </span>
+                                {review.verified && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Verified
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 mt-1">
+                                {review.comment}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeReview(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-
             {/* Submit Button */}
             <div className="flex justify-end gap-3 pt-4">
               <Button

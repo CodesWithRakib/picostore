@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import ProductCard from "./product-card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { IProduct } from "@/lib/models/Product"; // Update with your actual path
+import { IProduct } from "@/lib/models/Product";
 import { ProductCardSkeleton } from "./product-skeleton";
+import { getErrorMessage } from "@/lib/utils";
 
 interface ProductListProps {
   searchTerm?: string;
@@ -35,62 +36,69 @@ export default function ProductList({
   const [totalPages, setTotalPages] = useState(0);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  // Create axios instance with base configuration
-  const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
-    timeout: 10000,
-  });
+  // Memoize API instance to prevent recreation on each render
+  const api = useMemo(() => {
+    return axios.create({
+      baseURL: process.env.NEXT_PUBLIC_API_URL || "/api",
+      timeout: 10000,
+    });
+  }, []);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setIsFetchingMore(page > 1);
+  // Memoize fetch parameters to prevent unnecessary effect triggers
+  const fetchParams = useMemo(
+    () => ({
+      page,
+      searchTerm,
+      category,
+      sortOption,
+    }),
+    [page, searchTerm, category, sortOption]
+  );
 
-        // Build query parameters
-        const params: Record<string, string> = {
-          page: page.toString(),
-          limit: "6",
-        };
+  // Memoize fetch function to prevent recreation on each render
+  const fetchProducts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setIsFetchingMore(page > 1);
 
-        if (searchTerm) params.search = searchTerm;
-        if (category !== "all") params.category = category;
-        if (sortOption !== "featured") params.sort = sortOption;
+      const params: Record<string, string> = {
+        page: page.toString(),
+        limit: "6",
+      };
 
-        const response = await api.get<ProductsResponse>("/products", {
-          params,
-        });
-        const data = response.data;
+      if (searchTerm) params.search = searchTerm;
+      if (category !== "all") params.category = category;
+      if (sortOption !== "featured") params.sort = sortOption;
 
-        if (page === 1) {
-          setProducts(data.products);
-        } else {
-          setProducts((prev) => [...prev, ...data.products]);
-        }
+      const response = await api.get<ProductsResponse>("/products", { params });
+      const data = response.data;
 
-        setHasMore(data.hasMore);
-        setTotalCount(data.totalCount);
-        setTotalPages(data.totalPages);
-        setError(null);
-      } catch (err: any) {
-        const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          "Error loading products. Please try again later.";
-        setError(errorMessage);
-        console.error("Error fetching products:", err);
-
-        // If it's a subsequent page load failure, don't reset the existing products
-        if (page > 1) {
-          setHasMore(false); // Stop trying to load more
-        }
-      } finally {
-        setLoading(false);
-        setIsFetchingMore(false);
+      if (page === 1) {
+        setProducts(data.products);
+      } else {
+        setProducts((prev) => [...prev, ...data.products]);
       }
-    };
 
-    // Add a small delay to prevent too many requests when typing
+      setHasMore(data.hasMore);
+      setTotalCount(data.totalCount);
+      setTotalPages(data.totalPages);
+      setError(null);
+    } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err);
+      setError(errorMessage);
+      console.error("Error fetching products:", err);
+
+      if (page > 1) {
+        setHasMore(false);
+      }
+    } finally {
+      setLoading(false);
+      setIsFetchingMore(false);
+    }
+  }, [page, searchTerm, category, sortOption, api]);
+
+  // Use a debounced effect for fetching products
+  useEffect(() => {
     const timeoutId = setTimeout(
       () => {
         fetchProducts();
@@ -99,19 +107,19 @@ export default function ProductList({
     );
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, category, sortOption, page]);
+  }, [fetchParams, fetchProducts]);
 
-  const loadMoreProducts = () => {
-    if (!loading && hasMore && !isFetchingMore) {
-      setPage((prev) => prev + 1);
-    }
-  };
-
-  // Reset to first page when filters change
+  // Reset page when filters change
   useEffect(() => {
     setPage(1);
     setHasMore(false);
   }, [searchTerm, category, sortOption]);
+
+  const loadMoreProducts = useCallback(() => {
+    if (!loading && hasMore && !isFetchingMore) {
+      setPage((prev) => prev + 1);
+    }
+  }, [loading, hasMore, isFetchingMore]);
 
   if (loading && page === 1) {
     return (
@@ -192,7 +200,6 @@ export default function ProductList({
           Page {page} of {totalPages}
         </div>
       </div>
-
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {products.map((product) => (
@@ -201,14 +208,12 @@ export default function ProductList({
             product={product}
           />
         ))}
-
         {/* Show skeletons when loading more */}
         {isFetchingMore &&
           [...Array(3)].map((_, index) => (
             <ProductCardSkeleton key={`skeleton-${index}`} />
           ))}
       </div>
-
       {/* Load More Button - Only show if there are more products to load */}
       {hasMore && products.length > 0 && (
         <div className="mt-10 text-center">
@@ -229,7 +234,6 @@ export default function ProductList({
           </Button>
         </div>
       )}
-
       {/* End of results message */}
       {!hasMore && products.length > 0 && (
         <div className="mt-10 text-center text-gray-500 dark:text-gray-400">
