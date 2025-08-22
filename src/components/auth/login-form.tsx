@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import GoogleLoginButton from "./google-login-button";
+import { toast } from "sonner";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -25,11 +26,12 @@ export default function LoginForm() {
     });
 
     if (result?.error) {
-      console.error(result.error);
+      toast(result.error || " Failed to login ");
       setIsLoading(false);
     } else {
       // Refresh session to get the user data
       await getSession();
+      toast("Login Successful");
       router.push("/products");
     }
   };
